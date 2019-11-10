@@ -10,7 +10,7 @@ build:
         - script:
             name: build shellcheck
             code: |
-                git clone git@github.com:dokku/dokku.git ~/.dokku
+                git clone https://github.com/dokku/dokku.git ~/.dokku
                 cd ~/.dokku
 
         - script:
