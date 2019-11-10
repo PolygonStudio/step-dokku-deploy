@@ -1,19 +1,19 @@
-name: heroku-deploy
-version: 3.1.1
-summary: heroku-deploy step
+name: dokku-deploy
+version: 1.0.0
+summary: dokku-deploy step
 tags:
-  - heroku
+  - dokku
   - deploy
 properties:
 - name: user
   type: string
   required: false
-- name: key
+- name: host
   type: string
-  required: false
+  required: true
 - name: app_name
   type: string
-  required: false
+  required: true
 - name: key_name
   type: string
   required: true
