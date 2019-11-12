@@ -182,7 +182,8 @@ push_code() {
     local host="$3"
 
     debug "starting dokku deployment with git push";
-    git push -f "$username@$host:$app_name.git" HEAD:master;
+    git remote add dokku "$username@$host:$app_name.git"
+    git push -f dokku master;
     local exit_code_push=$?;
 
     debug "git pushed exited with $exit_code_push";
