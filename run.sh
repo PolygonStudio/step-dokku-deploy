@@ -12,27 +12,10 @@ main() {
 
     # Initialize some values
     init_wercker_environment_variables;
-    # init_netrc "$WERCKER_DOKKU_DEPLOY_USER" "$WERCKER_DOKKU_DEPLOY_KEY" "$WERCKER_DOKKU_DEPLOY_HOST";
     init_git "$WERCKER_DOKKU_DEPLOY_USER" "$WERCKER_DOKKU_DEPLOY_HOST";
     init_gitssh "$gitssh_path" "$ssh_key_path";
 
     cd "$WERCKER_DOKKU_DEPLOY_SOURCE_DIR" || fail "could not change directory to source_dir \"$WERCKER_DOKKU_DEPLOY_SOURCE_DIR\""
-
-    # Only test authentication if:
-    # - A run command was specified, or
-    # - No custom ssh key was specified
-    if [ -n "$WERCKER_DOKKU_DEPLOY_RUN" -o -z "$WERCKER_DOKKU_DEPLOY_KEY_NAME" ]; then
-        # verify user and key not empty
-        if [ -z "$WERCKER_DOKKU_DEPLOY_USER" ]; then
-            fail "user property is required"
-        fi
-
-        if [ -z "$WERCKER_DOKKU_DEPLOY_KEY_NAME" ]; then
-            fail "key_name property is required (API key)"
-        fi
-
-        # test_authentication "$WERCKER_DOKKU_DEPLOY_APP_NAME";
-    fi
 
     use_wercker_ssh_key "$ssh_key_path" "$WERCKER_DOKKU_DEPLOY_KEY_NAME";\
 
@@ -128,24 +111,7 @@ init_wercker_environment_variables() {
     fi
 }
 
-# init_netrc($username, $password) appends the machine credentials for Dokku to
-# the ~/.netrc file, make sure it is .
-#init_netrc() {
-#    local username="$1";
-#    local password="$2";
-#    local host="$3";
-#    local netrc="$HOME/.netrc";
-#
-#    {
-#        echo "machine $host"
-#        echo "  login $username"
-#        echo "  password $password"
-#    } >> "$netrc"
-#
-#    chmod 0600 "$netrc";
-#}
-
-# init_git checks that git exists, and that
+# init_git checks that git exists and is configured
 init_git() {
     local username="$1";
     local host="$2";
@@ -210,21 +176,6 @@ use_wercker_ssh_key() {
     chmod 0600 "$ssh_key_path";
 }
 
-use_random_ssh_key() {
-    local ssh_key_path="$1";
-
-    local ssh_key_comment="deploy-$RANDOM@wercker.com";
-
-    debug "no key-name specified, will generate key and add it to dokku";
-
-    debug 'generating random ssh key for this deploy';
-    ssh-keygen -f "$ssh_key_path" -C "$ssh_key_comment" -N '' -t rsa -q -b 4096;
-    debug "generated ssh key $ssh_key_comment for this deployment";
-    chmod 0600 "$ssh_key_path";
-
-    add_ssh_key "${ssh_key_path}.pub";
-}
-
 push_code() {
     local app_name="$1";
     local username="$2"
@@ -248,38 +199,6 @@ execute_dokku_command() {
 
     debug "dokku run exited with $exit_code_run";
     return $exit_code_run;
-}
-
-add_ssh_key() {
-    local public_key_path="$1";
-
-    local public_key;
-    public_key=$(cat "$public_key_path");
-
-    debug "Adding ssh key to Heroku account"
-
-    curl -n -X POST https://api.dokku.com/account/keys \
-        -H "Accept: application/vnd.dokku+json; version=3" \
-        -H "Content-Type: application/json" \
-        -d "{\"public_key\":\"$public_key\"}" > /dev/null 2>&1;
-}
-
-calculate_fingerprint() {
-    local public_key_path="$1";
-
-    ssh-keygen -lf "$public_key_path" | awk '{print $2}';
-}
-
-remove_ssh_key() {
-    local public_key_path="$1";
-
-    local fingerprint;
-    fingerprint=$(calculate_fingerprint "$public_key_path");
-
-    debug "Removing ssh key from Heroku account (fingerprint: $fingerprint)"
-
-     curl -n -X DELETE "https://api.dokku.com/account/keys/$fingerprint" \
-        -H "Accept: application/vnd.dokku+json; version=3" > /dev/null 2>&1;
 }
 
 use_current_git_directory() {
@@ -322,34 +241,6 @@ use_new_git_repository() {
     git init
     git add .
     git commit -m 'wercker deploy'
-}
-
-test_authentication() {
-    local app_name="$1"
-
-    check_curl;
-
-    set +e;
-    curl -n --fail \
-        -H "Accept: application/vnd.dokku+json; version=3" \
-        https://api.dokku.com/account > /dev/null 2>&1;
-    local exit_code_authentication_test=$?;
-    set -e;
-
-    if [ $exit_code_authentication_test -ne 0 ]; then
-        fail 'Unable to retrieve account information, please update your Heroku API key';
-    fi
-
-    set +e;
-    curl -n --fail \
-        -H "Accept: application/vnd.dokku+json; version=3" \
-        "https://api.dokku.com/apps/$app_name" > /dev/null 2>&1;
-    local exit_code_app_test=$?
-    set -e;
-
-    if [ $exit_code_app_test -ne 0 ]; then
-        fail 'Unable to retrieve application information, please check if the Heroku application still exists';
-    fi
 }
 
 check_curl() {

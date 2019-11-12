@@ -1,6 +1,6 @@
 # Dokku deployment step
 
-Deploy your code to Dokku. This step requires that you deploy to a Dokku
+Deploy your code to [Dokku](http://dokku.viewdocs.io/dokku/). This step requires that you deploy to a Dokku
 deploy target. 
 
 # Dependencies
@@ -49,7 +49,10 @@ available in `$PATH` before running this step:
 ``` yaml
 deploy:
     steps:
-        - dokku-deploy:
+        - add-to-known_hosts:
+            hostname: my.dokku.io
+
+        - polygonstudio/dokku-deploy:
             host: my.dokku.io
             app-name: application-name
             key-name: MY_DEPLOY_KEY
@@ -76,7 +79,10 @@ manually add the public key to Heroku.
 ```yaml
 deploy:
     steps:
-        - heroku-deploy:
+        - add-to-known_hosts:
+            hostname: my.dokku.io
+        
+        - polygonstudio/dokku-deploy:
             host: my.dokku.io 
             app-name: application-name
             key-name: MY_DEPLOY_KEY
@@ -91,6 +97,10 @@ post fix it with `_PRIVATE` or `_PUBLIC`.
 The MIT License (MIT)
 
 # Changelog
+
+## 1.0.1
+
+* Remove unused code for deploy without wercker ssh key
 
 ## 1.0.0
 
